@@ -1,0 +1,6 @@
+Flask
+requests
+uuid
+grpcio
+grpcio-tools
+protobuf
