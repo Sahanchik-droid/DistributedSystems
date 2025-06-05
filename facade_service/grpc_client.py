@@ -10,17 +10,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generated import messages_pb2, messages_pb2_grpc
 from service_utils import get_service_addresses
 
-def get_logging_services(config_server_url="http://localhost:5003"):
-    """Get available logging service addresses from config server"""
-    addresses = get_service_addresses("logging-service", config_server_url)
+def get_logging_services(consul_host="localhost", consul_port=8500):
+    """Get available logging service addresses from Consul"""
+    addresses = get_service_addresses("logging-service", consul_host, consul_port)
     if not addresses:
         print("Warning: No logging services found, using default fallback")
         return ['localhost:50051']  # Fallback to default
     return addresses
 
-def log_message(message_id, message, config_server_url="http://localhost:5003"):
+def log_message(message_id, message, consul_host="localhost", consul_port=8500):
     # Get available logging services dynamically
-    available_services = get_logging_services(config_server_url)
+    available_services = get_logging_services(consul_host, consul_port)
     services_to_try = available_services.copy()
     
     while services_to_try:
@@ -44,9 +44,9 @@ def log_message(message_id, message, config_server_url="http://localhost:5003"):
     # If all services failed
     return False, "All logging services are unavailable"
 
-def get_logs(config_server_url="http://localhost:5003"):
+def get_logs(consul_host="localhost", consul_port=8500):
     # Get available logging services dynamically
-    available_services = get_logging_services(config_server_url)
+    available_services = get_logging_services(consul_host, consul_port)
     services_to_try = available_services.copy()
     
     while services_to_try:
