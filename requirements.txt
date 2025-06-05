@@ -5,3 +5,4 @@ grpcio
 grpcio-tools
 protobuf
 hazelcast-python-client
+kafka-python

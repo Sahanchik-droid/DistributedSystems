@@ -6,16 +6,21 @@ import sys
 import os
 import argparse
 import random
+from kafka import KafkaProducer
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from service_utils import get_service_addresses
-
+global kafka_producer
 app = Flask(__name__)
 
 MESSAGES_SERVICE_URL = "http://localhost:5002"
 MAX_RETRIES = 3
 config_server_url = "http://localhost:5003"  # Default, will be updated from command line
+
+# Kafka producer will be initialized in main
+kafka_producer = None
+kafka_topic = "messages"
 
 def get_service_url(service_name):
     """Get a random service URL from available instances"""
@@ -40,8 +45,18 @@ def post_message():
         return jsonify({"error": "msg parameter is required"}), 400
     
     message_id = str(uuid.uuid4())
+    full_message = f"{message_id}:{message}"
+    try:
+        # Send message to Kafka
+        kafka_producer.send(kafka_topic, value=full_message.encode('utf-8'))
+        kafka_producer.flush()
+        print(f"Sent message to Kafka: {full_message}")
+    except Exception as e:
+        print(f"Error sending to Kafka: {e}")
+        return jsonify({"error": "Failed to send message to queue"}), 500
+
+    # Also log to logging-service as before
     retries = 0
-    
     while retries < MAX_RETRIES:
         try:
             # Get logging service URL dynamically
@@ -53,7 +68,7 @@ def post_message():
                 timeout=5
             )
             if response.status_code == 200:
-                return jsonify({"message": "Message logged successfully", "id": message_id})
+                return jsonify({"message": "Message logged and queued successfully", "id": message_id})
             retries += 1
             time.sleep(1)  # Add delay between retries
         except requests.exceptions.RequestException:
@@ -89,9 +104,17 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=5000, help='Port to listen on')
     parser.add_argument('--config-server', type=str, default="http://localhost:5003", 
                        help='URL of the config server')
+    parser.add_argument('--kafka-bootstrap-servers', type=str, default="localhost:9092,localhost:9093,localhost:9094",
+                        help='Kafka bootstrap servers')
     args = parser.parse_args()
     
     # Set global config server URL
     config_server_url = args.config_server
+
+    # Initialize Kafka producer
+    kafka_producer = KafkaProducer(
+        bootstrap_servers=args.kafka_bootstrap_servers.split(','),
+        retries=5
+    )
     
     app.run(host='0.0.0.0', port=args.port)
