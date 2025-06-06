@@ -18,7 +18,7 @@ app = Flask(__name__)
 messages = []
 
 # Get replication delay from environment variable (in seconds)
-REPLICATION_DELAY = int(os.environ.get("REPLICATION_DELAY", "1"))
+REPLICATION_DELAY = int(os.environ.get("REPLICATION_DELAY", "5"))
 
 logger.info(f"Secondary starting with replication delay: {REPLICATION_DELAY} seconds")
 
@@ -44,7 +44,6 @@ def replicate():
     # Store the message
     messages.append(message)
     logger.info(f"Added message to replicated log: {message}")
-    
     # Send ACK back to master
     return jsonify({"status": "success", "message": "Message replicated successfully"})
 
