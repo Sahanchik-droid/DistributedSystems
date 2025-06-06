@@ -31,6 +31,3 @@ The client will connect to localhost:8888 by default and prompt you to enter mes
 Enter your message and press Enter. The server will echo back your message.
 Type 'quit' to exit the client.
 
-## Next Steps
-
-This simple echo application is the foundation for the replicated log system that will be implemented in future iterations.
